@@ -1,4 +1,6 @@
-const { kv } = require('@vercel/kv');
+const { neon } = require('@neondatabase/serverless');
+
+const sql = neon(process.env.DATABASE_URL);
 
 const SYSTEM_PROMPT = `You are the "Aura Assistant" — the AI customer support agent embedded on AURA, a direct-to-consumer skincare brand's website. You are a real, live product demo built by an agency called Inphint to show a prospective skincare brand owner what this AI agent can do on their own store. Stay fully in character as AURA's support agent at all times; never mention you are Gemini, Google, or an AI language model unless directly and explicitly asked "are you a real person" or similar, in which case say you're AURA's AI assistant.
 
@@ -24,6 +26,18 @@ DEMO CONTEXT: The person testing this chat is very likely the founder or team me
 
 STYLE RULES: Keep replies short — 2-4 sentences typically. Never use markdown headers or bullet-heavy formatting. Never say "as an AI language model." Never break character.`;
 
+async function ensureTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS demo_messages (
+      id SERIAL PRIMARY KEY,
+      lead_id TEXT NOT NULL,
+      role TEXT NOT NULL,
+      text TEXT NOT NULL,
+      ts TIMESTAMPTZ DEFAULT now()
+    )
+  `;
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
@@ -32,6 +46,8 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
+    await ensureTable();
+
     const { leadId, messages } = req.body || {};
     const safeLeadId = String(leadId || 'anonymous').slice(0, 80);
     const msgs = Array.isArray(messages) ? messages : [];
@@ -62,15 +78,9 @@ module.exports = async (req, res) => {
       data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('\n').trim() ||
       "Sorry, could you rephrase that?";
 
-    // ---- log conversation to Vercel KV ----
-    const key = `lead:${safeLeadId}`;
-    const existing = (await kv.get(key)) || { leadId: safeLeadId, firstSeen: Date.now(), transcript: [] };
     const lastUser = msgs[msgs.length - 1];
-    existing.transcript.push({ role: 'user', text: lastUser?.content || '', ts: Date.now() });
-    existing.transcript.push({ role: 'assistant', text: reply, ts: Date.now() });
-    existing.lastSeen = Date.now();
-    await kv.set(key, existing);
-    await kv.sadd('lead_keys', key);
+    await sql`INSERT INTO demo_messages (lead_id, role, text) VALUES (${safeLeadId}, 'user', ${lastUser?.content || ''})`;
+    await sql`INSERT INTO demo_messages (lead_id, role, text) VALUES (${safeLeadId}, 'assistant', ${reply})`;
 
     return res.status(200).json({ reply });
   } catch (err) {
