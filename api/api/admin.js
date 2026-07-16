@@ -1,4 +1,6 @@
-const { kv } = require('@vercel/kv');
+const { neon } = require('@neondatabase/serverless');
+
+const sql = neon(process.env.DATABASE_URL);
 
 module.exports = async (req, res) => {
   const { key } = req.query;
@@ -7,13 +9,12 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const leadKeys = (await kv.smembers('lead_keys')) || [];
-    const leads = [];
-    for (const k of leadKeys) {
-      const val = await kv.get(k);
-      if (val) leads.push(val);
-    }
-    leads.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+    const leadRows = await sql`
+      SELECT lead_id, MIN(ts) AS first_seen, MAX(ts) AS last_seen, COUNT(*) AS message_count
+      FROM demo_messages
+      GROUP BY lead_id
+      ORDER BY last_seen DESC
+    `;
 
     let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
       <title>Inphint — Demo Leads</title>
@@ -28,14 +29,19 @@ module.exports = async (req, res) => {
         .empty{color:#888;font-size:14px;}
       </style></head><body>
       <h1>🔎 Who's tried the AURA demo</h1>
-      <p class="meta">${leads.length} lead(s) so far. Refresh anytime.</p>`;
+      <p class="meta">${leadRows.length} lead(s) so far. Refresh anytime.</p>`;
 
-    if (leads.length === 0) html += `<p class="empty">No conversations yet.</p>`;
+    if (leadRows.length === 0) html += `<p class="empty">No conversations yet.</p>`;
 
-    for (const l of leads) {
-      html += `<div class="lead"><h3>${l.leadId}</h3>
-        <div class="meta">First seen: ${new Date(l.firstSeen).toLocaleString()} · Last active: ${new Date(l.lastSeen).toLocaleString()} · ${l.transcript.length} messages</div>`;
-      for (const m of l.transcript) {
+    for (const lead of leadRows) {
+      const msgs = await sql`
+        SELECT role, text, ts FROM demo_messages
+        WHERE lead_id = ${lead.lead_id}
+        ORDER BY ts ASC
+      `;
+      html += `<div class="lead"><h3>${lead.lead_id}</h3>
+        <div class="meta">First seen: ${new Date(lead.first_seen).toLocaleString()} · Last active: ${new Date(lead.last_seen).toLocaleString()} · ${lead.message_count} messages</div>`;
+      for (const m of msgs) {
         html += `<div class="msg"><b>${m.role === 'user' ? 'Them' : 'Agent'}:</b> ${(m.text || '').replace(/</g, '&lt;')}</div>`;
       }
       html += `</div>`;
@@ -45,6 +51,7 @@ module.exports = async (req, res) => {
     res.setHeader('Content-Type', 'text/html');
     return res.status(200).send(html);
   } catch (err) {
+    console.error(err);
     return res.status(500).send('Error loading leads');
   }
 };
