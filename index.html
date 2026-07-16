@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AURA — AI Support Agent, Live Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1A2420;
+    --paper:#F3EFE6;
+    --panel:#FFFFFF;
+    --clay:#B4694A;
+    --clay-soft:#E8D2C4;
+    --moss:#5C7263;
+    --line: rgba(26,36,32,.10);
+    --muted: rgba(26,36,32,.58);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- top bar (agency framing) ---------- */
+  .topbar{
+    background:var(--ink); color:var(--paper);
+    font-size:12.5px; padding:10px 20px; text-align:center;
+    display:flex; justify-content:center; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .topbar b{color:var(--clay-soft); font-weight:600;}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:#89B79A; animation:pulse 1.8s infinite;}
+  @keyframes pulse{0%,100%{opacity:1} 50%{opacity:.3}}
+
+  /* ---------- header ---------- */
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:28px 56px; border-bottom:1px solid var(--line);
+    max-width:1360px; margin:0 auto;
+  }
+  .logo{ font-family:'Fraunces',serif; font-size:22px; font-weight:500; letter-spacing:.02em; }
+  nav{display:flex; gap:36px; font-size:13.5px; font-weight:500;}
+  nav a{text-decoration:none; color:var(--ink); opacity:.7;}
+  nav a:hover{opacity:1;}
+  .cart{font-size:13px; font-weight:600; border:1px solid var(--ink); padding:9px 18px; border-radius:999px;}
+
+  /* ---------- hero ---------- */
+  .hero{
+    max-width:1360px; margin:0 auto;
+    display:grid; grid-template-columns:1fr .82fr; gap:56px; align-items:center;
+    padding:78px 56px 100px;
+  }
+  .eyebrow{
+    font-size:11.5px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--moss); font-weight:600; margin-bottom:20px;
+  }
+  h1{
+    font-family:'Fraunces',serif; font-weight:500; font-size:56px; line-height:1.04;
+    margin:0 0 24px; letter-spacing:-.015em;
+  }
+  h1 em{font-style:italic; color:var(--clay);}
+  .hero p{ font-size:17px; line-height:1.62; color:var(--muted); max-width:460px; margin:0 0 32px; }
+  .hero-cta{
+    display:inline-flex; align-items:center; gap:9px;
+    background:var(--ink); color:var(--paper); padding:15px 28px; border-radius:999px;
+    font-weight:600; font-size:14px; text-decoration:none;
+  }
+  .visual{
+    position:relative; aspect-ratio:4/5; border-radius:22px;
+    background: linear-gradient(160deg, #E8D2C4 0%, #D8CBAF 50%, #A9B8A9 100%);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .bottle{
+    width:118px; height:250px; border-radius:10px 10px 26px 26px;
+    background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.78));
+    box-shadow:0 34px 64px rgba(26,36,32,.22);
+    position:relative;
+  }
+  .bottle::before{
+    content:''; position:absolute; top:-22px; left:50%; transform:translateX(-50%);
+    width:40px; height:28px; background:var(--moss); border-radius:5px 5px 2px 2px;
+  }
+  .bottle::after{
+    content:'AURA'; position:absolute; top:50%; left:0; right:0; text-align:center; transform:translateY(-50%);
+    font-family:'Fraunces',serif; font-size:13.5px; letter-spacing:.15em; color:var(--moss);
+  }
+
+  /* ---------- product strip ---------- */
+  .strip{ max-width:1360px; margin:0 auto; padding:0 56px 100px; display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+  .pcard{ border:1px solid var(--line); border-radius:16px; padding:24px; background:var(--panel); }
+  .swatch{ width:100%; height:120px; border-radius:10px; margin-bottom:18px; background:linear-gradient(135deg, var(--clay-soft), var(--moss)); }
+  .pcard h3{ font-family:'Fraunces',serif; font-weight:500; font-size:17.5px; margin:0 0 6px; }
+  .pcard p{ font-size:13px; color:var(--muted); margin:0 0 12px; line-height:1.5; }
+  .pcard .price{ font-weight:700; font-size:13.5px; }
+
+  footer{
+    max-width:1360px; margin:0 auto; padding:28px 56px; border-top:1px solid var(--line);
+    font-size:12px; color:var(--muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+
+  /* ================= CHAT WIDGET ================= */
+  #launcher{
+    position:fixed; bottom:26px; right:26px; width:60px; height:60px; border-radius:50%;
+    background:var(--ink); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; box-shadow:0 14px 32px rgba(26,36,32,.32); z-index:60; transition:transform .18s ease;
+  }
+  #launcher:hover{transform:scale(1.06);}
+  #launcher svg{width:23px;height:23px;}
+  #ping{
+    position:absolute; top:-3px; right:-3px; width:16px;height:16px; border-radius:50%;
+    background:var(--clay); color:#fff; font-size:9.5px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; border:2px solid var(--paper);
+  }
+
+  #panel{
+    position:fixed; bottom:26px; right:26px; width:392px; max-width:92vw; height:580px; max-height:80vh;
+    background:var(--panel); border-radius:18px; box-shadow:0 36px 80px rgba(26,36,32,.30);
+    display:flex; flex-direction:column; overflow:hidden; z-index:70;
+    opacity:0; transform:translateY(14px) scale(.98); pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+  }
+  #panel.open{opacity:1; transform:translateY(0) scale(1); pointer-events:auto;}
+
+  .chat-head{ background:var(--ink); color:var(--paper); padding:18px 20px; display:flex; align-items:center; gap:12px; }
+  .chat-avatar{
+    width:36px;height:36px;border-radius:50%; background:linear-gradient(135deg, var(--clay-soft), var(--moss));
+    display:flex;align-items:center;justify-content:center; font-family:'Fraunces',serif; font-weight:600; color:var(--ink); font-size:14px;
+  }
+  .chat-head-text .name{font-weight:600; font-size:14px;}
+  .chat-head-text .status{font-size:11px; opacity:.72; display:flex; align-items:center; gap:5px;}
+  .chat-head-text .status .d{width:5px;height:5px;border-radius:50%;background:#89B79A;}
+  #closeBtn{margin-left:auto; cursor:pointer; opacity:.65; font-size:17px; line-height:1;}
+  #closeBtn:hover{opacity:1;}
+
+  #messages{ flex:1; overflow-y:auto; padding:20px 16px; display:flex; flex-direction:column; gap:11px; background:var(--paper); }
+  .msg{ max-width:82%; font-size:13.5px; line-height:1.52; padding:11px 14px; border-radius:14px; white-space:pre-wrap; }
+  .msg.bot{ background:var(--panel); border:1px solid var(--line); align-self:flex-start; border-bottom-left-radius:4px; }
+  .msg.user{ background:var(--ink); color:var(--paper); align-self:flex-end; border-bottom-right-radius:4px; }
+  .msg.sys{ align-self:center; color:var(--muted); font-size:11px; padding:2px 0; }
+
+  .typing{ display:flex; gap:4px; align-self:flex-start; padding:12px 14px; background:var(--panel); border:1px solid var(--line); border-radius:14px; border-bottom-left-radius:4px; }
+  .typing span{ width:5.5px;height:5.5px;border-radius:50%;background:var(--moss); opacity:.5; animation:tb 1s infinite; }
+  .typing span:nth-child(2){animation-delay:.15s;}
+  .typing span:nth-child(3){animation-delay:.3s;}
+  @keyframes tb{0%,60%,100%{opacity:.3; transform:translateY(0)} 30%{opacity:1; transform:translateY(-3px)}}
+
+  #inputRow{ display:flex; gap:8px; padding:14px; border-top:1px solid var(--line); background:var(--panel); }
+  #inputRow input{ flex:1; border:1px solid var(--line); border-radius:999px; padding:11px 16px; font-family:'Inter',sans-serif; font-size:13px; outline:none; }
+  #inputRow input:focus{border-color:var(--moss);}
+  #sendBtn{ width:38px;height:38px;border-radius:50%; background:var(--ink); color:var(--paper); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+  .powered{ text-align:center; font-size:10px; color:var(--muted); padding:6px 0 10px; background:var(--panel); }
+
+  /* ---------- cart recovery toast ---------- */
+  #cartToast{
+    position:fixed; left:26px; bottom:26px; max-width:296px; background:var(--panel); border:1px solid var(--line);
+    border-radius:16px; padding:16px 18px; box-shadow:0 22px 48px rgba(26,36,32,.20); z-index:65;
+    display:flex; gap:12px; align-items:flex-start; transform:translateY(18px); opacity:0; pointer-events:none; transition:.3s ease;
+  }
+  #cartToast.show{transform:translateY(0); opacity:1; pointer-events:auto;}
+  #cartToast .ic{width:32px;height:32px;border-radius:50%; background:var(--clay-soft); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:14px;}
+  #cartToast h4{margin:0 0 4px; font-size:12.5px;}
+  #cartToast p{margin:0 0 10px; font-size:11.5px; color:var(--muted); line-height:1.4;}
+  #cartToast button{ background:var(--ink); color:var(--paper); border:none; border-radius:999px; padding:7px 14px; font-size:11px; font-weight:600; cursor:pointer; }
+  #cartToast .x{position:absolute; top:10px; right:12px; cursor:pointer; font-size:13px; opacity:.4;}
+
+  @media (max-width:860px){
+    .hero{grid-template-columns:1fr; padding:44px 24px 56px;}
+    h1{font-size:38px;}
+    .strip{grid-template-columns:1fr; padding:0 24px 56px;}
+    header{padding:20px 24px;}
+    nav{display:none;}
+    #panel{right:12px; left:12px; width:auto; bottom:92px;}
+    #launcher{right:20px; bottom:20px;}
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar"><span class="live-dot"></span> Live AI demo by <b>Inphint</b> — this agent is really thinking. Try it, bottom-right.</div>
+
+  <header>
+    <div class="logo">AURA</div>
+    <nav><a href="#">Shop</a><a href="#">Routines</a><a href="#">Ingredients</a><a href="#">About</a></nav>
+    <div class="cart">Cart (0)</div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Barrier-first skincare</div>
+      <h1>Skin that speaks <em>for itself.</em></h1>
+      <p>Clean, dermatologist-formulated skincare built around your actual skin type — not a trend. Small-batch, cruelty-free, made to last.</p>
+      <a class="hero-cta" href="#">Shop the routine →</a>
+    </div>
+    <div class="visual"><div class="bottle"></div></div>
+  </section>
+
+  <section class="strip">
+    <div class="pcard"><div class="swatch"></div><h3>Vitamin C Glow Serum</h3><p>Brightening + antioxidant defense for dull, uneven skin.</p><div class="price">$38.00</div></div>
+    <div class="pcard"><div class="swatch" style="background:linear-gradient(135deg,#D8CBAF,#5C7263);"></div><h3>Barrier Repair Cream</h3><p>Ceramide-rich moisturizer for sensitive, reactive skin.</p><div class="price">$42.00</div></div>
+    <div class="pcard"><div class="swatch" style="background:linear-gradient(135deg,#5C7263,#E8D2C4);"></div><h3>Clarifying Clay Mask</h3><p>Weekly deep-clean for oily and congested skin.</p><div class="price">$29.00</div></div>
+  </section>
+
+  <footer><div>© AURA Skincare — demo storefront</div><div>AI support agent by Inphint · inphint.com</div></footer>
+
+  <div id="cartToast">
+    <span class="x" onclick="document.getElementById('cartToast').classList.remove('show')">✕</span>
+    <div class="ic">🛒</div>
+    <div>
+      <h4>Still thinking it over?</h4>
+      <p>Your Vitamin C Glow Serum is waiting. Complete your order in the next hour for free shipping.</p>
+      <button onclick="openChatFromToast()">Finish my order</button>
+    </div>
+  </div>
+
+  <div id="launcher" onclick="toggleChat(true)">
+    <div id="ping">1</div>
+    <svg viewBox="0 0 24 24" fill="none" stroke="#F3EFE6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+    </svg>
+  </div>
+
+  <div id="panel">
+    <div class="chat-head">
+      <div class="chat-avatar">A</div>
+      <div class="chat-head-text"><div class="name">Aura Assistant</div><div class="status"><span class="d"></span> Online · replies instantly</div></div>
+      <div id="closeBtn" onclick="toggleChat(false)">✕</div>
+    </div>
+    <div id="messages"></div>
+    <div id="inputRow">
+      <input id="userInput" type="text" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendCustom()">
+      <div id="sendBtn" onclick="sendCustom()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F3EFE6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+      </div>
+    </div>
+    <div class="powered">⚡ Powered by Inphint AI</div>
+  </div>
+
+<script>
+  // Same domain, so a relative path just works — no URL to configure.
+  const CHAT_ENDPOINT = "/api/chat";
+
+  // Identify the lead from the link, e.g. ?lead=sarah-london
+  const params = new URLSearchParams(window.location.search);
+  const leadId = params.get('lead') || ('anonymous-' + Math.random().toString(36).slice(2,8));
+
+  const messagesEl = document.getElementById('messages');
+  let opened = false;
+  let busy = false;
+  let history = [];
+
+  function addMsg(text, cls){
+    const div = document.createElement('div');
+    div.className = 'msg ' + cls;
+    div.textContent = text;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+  function addSys(text){
+    const div = document.createElement('div');
+    div.className = 'msg sys';
+    div.textContent = text;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+  function showTyping(){
+    const t = document.createElement('div');
+    t.className = 'typing'; t.id = 'typingIndicator';
+    t.innerHTML = '<span></span><span></span><span></span>';
+    messagesEl.appendChild(t);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+  function hideTyping(){ const t = document.getElementById('typingIndicator'); if(t) t.remove(); }
+
+  async function askAgent(userText){
+    history.push({ role: "user", content: userText });
+    showTyping(); busy = true;
+    try {
+      const res = await fetch(CHAT_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadId, messages: history })
+      });
+      const data = await res.json();
+      hideTyping();
+      const reply = data.reply || "Sorry, could you rephrase that?";
+      history.push({ role: "assistant", content: reply });
+      addMsg(reply, 'bot');
+      if (/priya/i.test(reply)) setTimeout(()=> addSys('— Priya joined the conversation —'), 1200);
+    } catch (err) {
+      hideTyping();
+      addMsg("Hmm, having trouble connecting — try again in a moment?", 'bot');
+      console.error(err);
+    }
+    busy = false;
+  }
+
+  function sendCustom(){
+    if(busy) return;
+    const input = document.getElementById('userInput');
+    const val = input.value.trim();
+    if(!val) return;
+    addMsg(val, 'user');
+    input.value = '';
+    askAgent(val);
+  }
+
+  function toggleChat(open){
+    const panel = document.getElementById('panel');
+    const ping = document.getElementById('ping');
+    if(open){
+      panel.classList.add('open'); ping.style.display = 'none';
+      if(!opened){
+        opened = true;
+        addMsg("Hi! I'm the Aura Assistant 👋 Ask me anything — product fit, ingredients, an order, our return policy. I'm answering live, not from a script.", 'bot');
+        setTimeout(()=> document.getElementById('userInput').focus(), 300);
+      }
+    } else { panel.classList.remove('open'); }
+  }
+
+  function openChatFromToast(){
+    document.getElementById('cartToast').classList.remove('show');
+    toggleChat(true);
+  }
+
+  setTimeout(()=>{ document.getElementById('cartToast').classList.add('show'); }, 6000);
+</script>
+
+</body>
+</html>
