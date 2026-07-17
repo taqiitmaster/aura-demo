@@ -57,7 +57,7 @@ module.exports = async (req, res) => {
       parts: [{ text: typeof m.content === 'string' ? m.content : '' }],
     }));
 
-    const GEMINI_MODEL = 'gemini-2.5-flash'; // free-tier model
+    const GEMINI_MODEL = 'gemini-flash-latest'; // stable alias, always points to current free flash model
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
     const apiRes = await fetch(geminiUrl, {
@@ -74,9 +74,18 @@ module.exports = async (req, res) => {
     });
 
     const data = await apiRes.json();
+
+    if (!apiRes.ok) {
+      console.error('Gemini API error:', JSON.stringify(data));
+    }
+
     const reply =
       data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('\n').trim() ||
       "Sorry, could you rephrase that?";
+
+    if (reply === "Sorry, could you rephrase that?") {
+      console.error('No candidates in Gemini response. Full response:', JSON.stringify(data));
+    }
 
     const lastUser = msgs[msgs.length - 1];
     await sql`INSERT INTO demo_messages (lead_id, role, text) VALUES (${safeLeadId}, 'user', ${lastUser?.content || ''})`;
